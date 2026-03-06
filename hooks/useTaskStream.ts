@@ -10,7 +10,7 @@ export function useTaskStream() {
   const [error, setError] = useState<string>("");
   const eventSourceRef = useRef<EventSource | null>(null);
 
-  const runTask = useCallback(async (task: string, userId: string) => {
+  const runTask = useCallback(async (task: string, userId: string, userPlan: string) => {
     setIsRunning(true);
     setOutputs([]);
     setError("");
@@ -27,7 +27,7 @@ export function useTaskStream() {
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ task, user_id: userId }),
+        body: JSON.stringify({ task, user_id: userId, user_plan: userPlan }),
       },
     );
 

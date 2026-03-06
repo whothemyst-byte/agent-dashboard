@@ -1,10 +1,10 @@
-import anthropic
+import os
 import json
-from typing import TypedDict, List, Annotated
+from typing import TypedDict, List
 from langgraph.graph import StateGraph, END
-from langchain_anthropic import ChatAnthropic
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from agents.roles import AGENT_ROLES
+from agents.openrouter_client import get_model
 
 
 # --- State definition ---
@@ -12,6 +12,7 @@ class AgentState(TypedDict):
     task: str
     user_id: str
     task_id: str
+    user_plan: str
     ceo_plan: dict
     research_output: str
     analysis_output: str
@@ -25,20 +26,24 @@ class AgentState(TypedDict):
 
 
 # --- Model factory ---
-def get_model(model_name: str):
-    if model_name == "claude-haiku-4-5":
-        return ChatAnthropic(model="claude-haiku-4-5-20251001", max_tokens=2048)
-    elif model_name == "claude-sonnet-4-6":
-        return ChatAnthropic(model="claude-sonnet-4-6", max_tokens=4096)
-    else:
-        return ChatGroq(model="llama-3.3-70b-versatile", max_tokens=2048)
+def get_chat_model(plan: str, role: str):
+    return ChatOpenAI(
+        model=get_model(plan, role),
+        api_key=os.getenv("OPENROUTER_API_KEY"),
+        base_url="https://openrouter.ai/api/v1",
+        default_headers={
+            "HTTP-Referer": os.getenv("NEXT_PUBLIC_URL", "http://localhost:3000"),
+            "X-Title": "AgentOS",
+        },
+        max_tokens=4096,
+    )
 
 
 # --- Agent node factory ---
-def make_agent_node(role: str, model_name: str = "claude-haiku-4-5"):
+def make_agent_node(role: str):
     def agent_node(state: AgentState) -> AgentState:
         role_config = AGENT_ROLES[role]
-        model = get_model(model_name)
+        model = get_chat_model(state.get("user_plan", "free"), role)
         messages = [
             {"role": "system", "content": role_config["system_prompt"]},
             {
@@ -81,13 +86,13 @@ def build_agent_graph():
     workflow = StateGraph(AgentState)
 
     # Add nodes for each agent
-    workflow.add_node("ceo", make_agent_node("ceo", "claude-sonnet-4-6"))
-    workflow.add_node("manager", make_agent_node("manager", "claude-haiku-4-5"))
-    workflow.add_node("researcher", make_agent_node("researcher", "claude-haiku-4-5"))
-    workflow.add_node("analyst", make_agent_node("analyst", "claude-sonnet-4-6"))
-    workflow.add_node("coder", make_agent_node("coder", "claude-haiku-4-5"))
-    workflow.add_node("writer", make_agent_node("writer", "claude-haiku-4-5"))
-    workflow.add_node("qa", make_agent_node("qa", "claude-haiku-4-5"))
+    workflow.add_node("ceo", make_agent_node("ceo"))
+    workflow.add_node("manager", make_agent_node("manager"))
+    workflow.add_node("researcher", make_agent_node("researcher"))
+    workflow.add_node("analyst", make_agent_node("analyst"))
+    workflow.add_node("coder", make_agent_node("coder"))
+    workflow.add_node("writer", make_agent_node("writer"))
+    workflow.add_node("qa", make_agent_node("qa"))
 
     # Entry point
     workflow.set_entry_point("ceo")
@@ -129,11 +134,12 @@ AGENT_GRAPH = build_agent_graph()
 
 
 # --- Main run function (used by API) ---
-async def run_agents(task: str, user_id: str, task_id: str):
+async def run_agents(task: str, user_id: str, task_id: str, user_plan: str):
     initial_state = AgentState(
         task=task,
         user_id=user_id,
         task_id=task_id,
+        user_plan=user_plan,
         ceo_plan={},
         research_output="",
         analysis_output="",

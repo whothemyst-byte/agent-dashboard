@@ -52,7 +52,7 @@ function DashboardContent() {
 
   async function launchTask() {
     if (!task.trim()) return;
-    await runTask(task, user?.id ?? "demo-user");
+    await runTask(task, user?.id ?? "demo-user", user?.plan ?? "free");
   }
 
   function scrollToComposer() {

@@ -10,6 +10,7 @@ router = APIRouter()
 class TaskRequest(BaseModel):
     task: str
     user_id: str
+    user_plan: str = "free"
     selected_agents: list[str] = []
 
 
@@ -29,7 +30,7 @@ async def run_task(req: TaskRequest):
     async def event_stream():
         task_id = f"task_{req.user_id}_{int(asyncio.get_event_loop().time())}"
         try:
-            async for chunk in run_agents(req.task, req.user_id, task_id):
+            async for chunk in run_agents(req.task, req.user_id, task_id, req.user_plan):
                 event_data = {
                     "type": "agent_update",
                     "task_id": task_id,

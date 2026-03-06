@@ -25,7 +25,7 @@ const plans: Plan[] = [
     features: [
       "5 tasks/month",
       "3 agents max (default only)",
-      "Claude Haiku model only",
+      "Free AI models (Llama 3.3 70B · Qwen3 Coder · Mistral Small)",
       "No custom agents",
     ],
   },
@@ -37,7 +37,7 @@ const plans: Plan[] = [
     features: [
       "100 tasks/month",
       "15 agents (including custom)",
-      "Claude Haiku + Sonnet",
+      "Claude Haiku 4.5 via OpenRouter",
       "Task history (30 days)",
       "Priority support",
     ],
@@ -49,7 +49,7 @@ const plans: Plan[] = [
     features: [
       "Unlimited tasks",
       "Unlimited custom agents",
-      "All models including Groq",
+      "Claude Sonnet 4.6 via OpenRouter",
       "Full task history + API access",
     ],
   },
