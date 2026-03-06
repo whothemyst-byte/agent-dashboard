@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { resendVerificationEmail, signIn, signUp } from "@/lib/auth";
+import { getUser, resendVerificationEmail, signIn, signUp } from "@/lib/auth";
 import { getSiteUrl } from "@/lib/site-url";
 import { supabase } from "@/lib/supabase";
 
@@ -39,8 +39,8 @@ export default function AuthPage() {
       const hashError = hashParams.get("error_description");
       if (hashError) setError(hashError.replace(/\+/g, " "));
     }
-    supabase.auth.getSession().then(({ data }) => {
-      if (data.session) router.push(nextPath);
+    getUser().then((user) => {
+      if (user) router.push(nextPath);
     });
   }, [nextPath, router]);
 

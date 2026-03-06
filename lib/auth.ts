@@ -21,7 +21,24 @@ export const signIn = async (email: string, password: string) => {
 
 export const signOut = async () => { await supabase.auth.signOut(); };
 export const getUser = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error) {
+    // If the token is no longer valid (for example after user reset),
+    // clear local auth state to avoid auth/onboarding redirect loops.
+    if ((error as { status?: number }).status === 403) {
+      try {
+        await supabase.auth.signOut({ scope: "local" });
+      } catch {
+        // ignore local signout cleanup errors
+      }
+    }
+    return null;
+  }
+
   return user;
 };
 
