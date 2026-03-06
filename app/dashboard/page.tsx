@@ -20,25 +20,28 @@ import type { Agent, User } from "@/lib/types";
 import { useAgents } from "@/hooks/useAgents";
 import { useTaskStream } from "@/hooks/useTaskStream";
 import { LogOut, UserCircle2 } from "lucide-react";
+import { getUserPlan } from "@/lib/user-plan";
 
 function DashboardContent() {
   const router = useRouter();
   const composerRef = useRef<HTMLDivElement | null>(null);
-  const { agents, loading } = useAgents();
+  const { agents, loading, userPlan, needsAgentSelection, availableDefaultAgents, selectDefaultAgents } = useAgents();
   const { isRunning, outputs, activeAgent, error, runTask } = useTaskStream();
   const [user, setUser] = useState<User | null>(null);
   const [task, setTask] = useState("");
-  const [model, setModel] = useState("openrouter-auto");
+  const [model, setModel] = useState("meta-llama/llama-3.3-70b-instruct:free");
+  const [selectedDefaultAgents, setSelectedDefaultAgents] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadUser() {
       const authUser = await getUser();
       if (!authUser) return;
+      const plan = await getUserPlan(authUser.id);
 
       setUser({
         id: authUser.id,
         email: authUser.email ?? "",
-        plan: "free",
+        plan,
         tasksUsedThisMonth: 0,
         agentsCreated: agents.length,
       });
@@ -53,6 +56,24 @@ function DashboardContent() {
   async function launchTask() {
     if (!task.trim()) return;
     await runTask(task, user?.id ?? "demo-user", user?.plan ?? "free");
+  }
+
+  async function handleCompleteSelection() {
+    await selectDefaultAgents(selectedDefaultAgents);
+  }
+
+  function toggleDefaultAgent(agentId: string) {
+    setSelectedDefaultAgents((current) => {
+      if (current.includes(agentId)) {
+        return current.filter((item) => item !== agentId);
+      }
+
+      if (current.length >= 3) {
+        return current;
+      }
+
+      return [...current, agentId];
+    });
   }
 
   function scrollToComposer() {
@@ -165,6 +186,7 @@ function DashboardContent() {
               <TaskInput
                 task={task}
                 model={model}
+                userPlan={userPlan}
                 isRunning={isRunning}
                 outputs={outputs}
                 activeAgent={activeAgent}
@@ -188,6 +210,46 @@ function DashboardContent() {
                 </Link>
               </div>
 
+              {needsAgentSelection ? (
+                <div className="mb-4 rounded-2xl border border-zinc-800 bg-[#1a1a2e] p-5">
+                  <h3 className="text-lg font-semibold text-zinc-100">Choose Your 3 Free Agents</h3>
+                  <p className="mt-1 text-sm text-zinc-400">
+                    Free users can activate exactly 3 default agents on first login. Your selection is saved to your account.
+                  </p>
+                  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {availableDefaultAgents.map((agent) => {
+                      const selected = selectedDefaultAgents.includes(agent.id);
+                      return (
+                        <button
+                          key={agent.id}
+                          type="button"
+                          onClick={() => toggleDefaultAgent(agent.id)}
+                          className={`rounded-xl border p-4 text-left transition ${
+                            selected
+                              ? "border-[#e8560a] bg-[#e8560a]/10"
+                              : "border-zinc-800 bg-zinc-950/30 hover:border-zinc-600"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-semibold text-zinc-100">{agent.name}</span>
+                            <span className="text-xs uppercase text-zinc-400">{agent.role}</span>
+                          </div>
+                          <p className="mt-2 text-sm text-zinc-400">{agent.description}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCompleteSelection}
+                    disabled={selectedDefaultAgents.length !== 3}
+                    className="mt-4 rounded-lg bg-[#e8560a] px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    Save 3 Agents
+                  </button>
+                </div>
+              ) : null}
+
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {loading ? <p className="text-sm text-zinc-500">Loading agents...</p> : null}
                 {agents.map((agent) => (
@@ -205,9 +267,13 @@ function DashboardContent() {
                 >
                   <div>
                     <p className="text-3xl text-zinc-300">+</p>
-                    <p className="mt-2 font-semibold text-zinc-100">Add Custom Agent</p>
+                    <p className="mt-2 font-semibold text-zinc-100">
+                      {userPlan === "free" ? "Free Plan Locked" : "Add Custom Agent"}
+                    </p>
                     <p className="mt-1 text-sm text-zinc-400">
-                      Create specialist agents with custom prompts, models, and tools.
+                      {userPlan === "free"
+                        ? "Free users can work with the 3 selected default agents only."
+                        : "Create specialist agents with custom prompts, models, and tools."}
                     </p>
                   </div>
                 </Link>

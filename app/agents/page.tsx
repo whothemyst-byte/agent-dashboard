@@ -11,7 +11,7 @@ import type { Agent } from "@/lib/types";
 
 export default function AgentsPage() {
   const router = useRouter();
-  const { agents, loading, createAgent, updateAgent } = useAgents();
+  const { agents, loading, createAgent, updateAgent, userPlan } = useAgents();
   const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -48,6 +48,7 @@ export default function AgentsPage() {
           </p>
         </div>
         <AgentBuilder
+          userPlan={userPlan}
           selectedAgent={selectedAgent}
           onCreate={createAgent}
           onUpdate={updateAgent}

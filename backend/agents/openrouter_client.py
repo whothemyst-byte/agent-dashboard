@@ -21,8 +21,8 @@ MODELS = {
     "pro": {
         "general": "anthropic/claude-haiku-4-5",
         "coding": "anthropic/claude-haiku-4-5",
-        "analysis": "anthropic/claude-sonnet-4-6",
-        "ceo": "anthropic/claude-sonnet-4-6",
+        "analysis": "anthropic/claude-haiku-4-5",
+        "ceo": "anthropic/claude-haiku-4-5",
     },
     "agency": {
         "general": "anthropic/claude-haiku-4-5",
@@ -34,7 +34,7 @@ MODELS = {
 
 
 def get_model(plan: str, role: str) -> str:
-    tier = "agency" if plan == "agency" else "pro" if plan == "pro" else "free"
+    tier = "agency" if plan in {"agency", "enterprise"} else "pro" if plan == "pro" else "free"
 
     if role == "ceo":
         return MODELS[tier].get("ceo", MODELS[tier]["general"])

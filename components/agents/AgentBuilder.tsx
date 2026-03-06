@@ -4,8 +4,10 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Agent, AgentRole } from "@/lib/types";
+import { getAgentModelOptions, type UserPlan } from "@/lib/user-plan";
 
 type AgentBuilderProps = {
+  userPlan: UserPlan;
   selectedAgent?: Agent | null;
   onCreate: (payload: Partial<Agent> & { name: string; role: AgentRole }) => Promise<unknown>;
   onUpdate: (agentId: string, payload: Partial<Agent>) => Promise<unknown>;
@@ -24,33 +26,28 @@ const roles: AgentRole[] = [
   "custom",
 ];
 
-const models: Agent["model"][] = [
-  "claude-haiku-4-5",
-  "claude-sonnet-4-6",
-  "groq-llama-70b",
-];
-
 const defaultForm = {
   name: "",
   role: "custom" as AgentRole,
   description: "",
   systemPrompt: "",
-  model: "claude-haiku-4-5" as Agent["model"],
+  model: "meta-llama/llama-3.3-70b-instruct:free" as Agent["model"],
   tools: "",
   color: "#6366f1",
   icon: "AG",
 };
 
-export function AgentBuilder({ selectedAgent, onCreate, onUpdate, onCancelEdit }: AgentBuilderProps) {
+export function AgentBuilder({ userPlan, selectedAgent, onCreate, onUpdate, onCancelEdit }: AgentBuilderProps) {
   const [name, setName] = useState("");
   const [role, setRole] = useState<AgentRole>("custom");
   const [description, setDescription] = useState("");
   const [systemPrompt, setSystemPrompt] = useState("");
-  const [model, setModel] = useState<Agent["model"]>("claude-haiku-4-5");
+  const [model, setModel] = useState<Agent["model"]>("meta-llama/llama-3.3-70b-instruct:free");
   const [tools, setTools] = useState("");
   const [color, setColor] = useState("#6366f1");
   const [icon, setIcon] = useState("AG");
   const isEditing = useMemo(() => Boolean(selectedAgent && !selectedAgent.id.startsWith("default-")), [selectedAgent]);
+  const models = useMemo(() => getAgentModelOptions(userPlan), [userPlan]);
 
   useEffect(() => {
     if (!selectedAgent) {
@@ -69,11 +66,11 @@ export function AgentBuilder({ selectedAgent, onCreate, onUpdate, onCancelEdit }
     setRole(selectedAgent.role);
     setDescription(selectedAgent.description);
     setSystemPrompt(selectedAgent.systemPrompt);
-    setModel(selectedAgent.model);
+    setModel(models.includes(selectedAgent.model) ? selectedAgent.model : models[0]);
     setTools(selectedAgent.tools.join(", "));
     setColor(selectedAgent.color);
     setIcon(selectedAgent.icon || "AG");
-  }, [selectedAgent]);
+  }, [models, selectedAgent]);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -108,7 +105,9 @@ export function AgentBuilder({ selectedAgent, onCreate, onUpdate, onCancelEdit }
           <p className="text-sm text-zinc-400">
             {selectedAgent?.id.startsWith("default-")
               ? "Default agents can be reviewed here. Save will create your custom copy."
-              : "Set the role, prompt, model, and visual identity for this agent."}
+              : userPlan === "free"
+                ? "Free users keep the 3 selected default agents. Custom agent creation is disabled."
+                : "Set the role, prompt, model, and visual identity for this agent."}
           </p>
         </div>
         {selectedAgent ? (
@@ -167,7 +166,7 @@ export function AgentBuilder({ selectedAgent, onCreate, onUpdate, onCancelEdit }
         onChange={(event) => setTools(event.target.value)}
       />
 
-      <Button type="submit">
+      <Button type="submit" disabled={userPlan === "free" && !selectedAgent}>
         {isEditing ? "Save Agent" : selectedAgent?.id.startsWith("default-") ? "Create Custom Copy" : "Create Agent"}
       </Button>
     </form>

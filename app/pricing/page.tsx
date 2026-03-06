@@ -49,7 +49,7 @@ const plans: Plan[] = [
     features: [
       "Unlimited tasks",
       "Unlimited custom agents",
-      "Claude Sonnet 4.6 via OpenRouter",
+      "Claude Sonnet 4.6 + Haiku 4.5 via OpenRouter",
       "Full task history + API access",
     ],
   },

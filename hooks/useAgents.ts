@@ -5,93 +5,26 @@ import type { Agent, AgentRole } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { getUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { getModel } from "@/lib/openrouter";
+import { getAgentModelOptions, getDefaultRoleSet, getUserPlan, type UserPlan } from "@/lib/user-plan";
 
-const defaultPrompts: Record<AgentRole, string> = {
-  ceo: `You are the CEO Agent, the strategic orchestrator of an AI agent team.
-Your responsibilities:
-1. Receive the user's high-level goal
-2. Analyze and break it down into 3-5 clear subtasks
-3. Assign each subtask to the most suitable agent
-4. Define success criteria for each subtask
-5. Synthesize all agent outputs into a final executive summary`,
-  manager: `You are the Manager Agent.
-1. Check dependencies between tasks
-2. Route each task to the correct agent
-3. Monitor completion and report blockers
-4. Compile results for the CEO`,
-  tech_lead: `You are the Tech Lead Agent.
-1. Evaluate technical options for scalability, cost, and maintainability
-2. Consider security and performance implications
-3. Recommend the best approach with reasoning
-4. Identify technical risks and mitigation steps
-5. Define implementation steps`,
-  researcher: `You are the Researcher Agent.
-1. Identify key questions
-2. Gather relevant information
-3. Extract facts and insights
-4. Cite sources when possible
-5. Return structured findings`,
-  analyst: `You are the Analyst Agent.
-1. Review the available data and research
-2. Identify patterns, trends, and anomalies
-3. Produce actionable insights
-4. Quantify findings when possible
-5. Recommend next steps based on evidence`,
-  coder: `You are the Coder Agent.
-1. Understand the requirement completely
-2. Choose the simplest working solution
-3. Write clean, type-safe code
-4. Include error handling
-5. Add a usage example`,
-  writer: `You are the Writer Agent.
-1. Understand the audience and purpose
-2. Structure content clearly
-3. Use active voice and concrete language
-4. Match the requested tone
-5. Deliver polished, ready-to-use content`,
-  qa: `You are the QA Agent.
-1. Check output against requirements
-2. Identify errors, gaps, or inconsistencies
-3. Flag unverified claims
-4. Check code for bugs or security issues
-5. Return issues found, quality score, and approval status`,
-  custom: "You are a custom specialist agent. Follow the user's instructions precisely and respond clearly.",
-};
-
-const defaultAgents: Agent[] = [
-  createDefaultAgent("default-ceo", "CEO Agent", "ceo", "#6366f1", "CEO"),
-  createDefaultAgent("default-manager", "Manager Agent", "manager", "#3b82f6", "MGR"),
-  createDefaultAgent("default-tech-lead", "Tech Lead Agent", "tech_lead", "#06b6d4", "TL"),
-  createDefaultAgent("default-researcher", "Researcher Agent", "researcher", "#10b981", "RES"),
-  createDefaultAgent("default-analyst", "Analyst Agent", "analyst", "#f59e0b", "ANL"),
-  createDefaultAgent("default-coder", "Coder Agent", "coder", "#8b5cf6", "DEV"),
-  createDefaultAgent("default-writer", "Writer Agent", "writer", "#ec4899", "WRT"),
-  createDefaultAgent("default-qa", "QA Agent", "qa", "#ef4444", "QA"),
-];
-
-function createDefaultAgent(
-  id: string,
-  name: string,
-  role: AgentRole,
-  color: string,
-  icon: string,
-): Agent {
-  return {
-    id,
-    name,
-    role,
-    description: `${name} ready for orchestration.`,
-    systemPrompt: defaultPrompts[role],
-    model: "claude-haiku-4-5",
+function buildDefaultAgents(plan: UserPlan): Agent[] {
+  return getDefaultRoleSet().map((item) => ({
+    id: item.id,
+    name: item.name,
+    role: item.role,
+    description: item.description,
+    systemPrompt: item.systemPrompt,
+    model: getModel(plan, item.role),
     tools: [],
     status: "idle",
     lastOutput: "",
     createdAt: new Date(0).toISOString(),
     userId: "default",
     isDefault: true,
-    color,
-    icon,
-  };
+    color: item.color,
+    icon: item.icon,
+  }));
 }
 
 function mapDbAgent(row: any): Agent {
@@ -137,17 +70,26 @@ export function useAgents() {
   const updateAgentInStore = useAppStore((state) => state.updateAgent);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string>("");
+  const [userPlan, setUserPlan] = useState<UserPlan>("free");
+  const [needsAgentSelection, setNeedsAgentSelection] = useState(false);
+  const [availableDefaultAgents, setAvailableDefaultAgents] = useState<Agent[]>([]);
 
   useEffect(() => {
     async function loadAgents() {
       try {
         const authUser = await getUser();
         if (!authUser) {
-          setAgents(defaultAgents);
+          const fallbackAgents = buildDefaultAgents("free");
+          setAvailableDefaultAgents(fallbackAgents);
+          setAgents(fallbackAgents);
           return;
         }
 
         setUserId(authUser.id);
+        const plan = await getUserPlan(authUser.id);
+        setUserPlan(plan);
+        const planDefaults = buildDefaultAgents(plan);
+        setAvailableDefaultAgents(planDefaults);
         const { data, error } = await supabase
           .from("agents")
           .select("*")
@@ -157,9 +99,22 @@ export function useAgents() {
         if (error) throw error;
 
         const dbAgents = (data ?? []).map(mapDbAgent);
-        const mergedDefaults = defaultAgents.filter(
+
+        if (plan === "free") {
+          if (dbAgents.length === 0) {
+            setNeedsAgentSelection(true);
+            setAgents([]);
+          } else {
+            setNeedsAgentSelection(false);
+            setAgents(dbAgents);
+          }
+          return;
+        }
+
+        const mergedDefaults = planDefaults.filter(
           (defaultAgent) => !dbAgents.some((item) => item.role === defaultAgent.role && item.isDefault),
         );
+        setNeedsAgentSelection(false);
         setAgents([...mergedDefaults, ...dbAgents]);
       } finally {
         setLoading(false);
@@ -173,6 +128,14 @@ export function useAgents() {
     const authUserId = userId || (await getUser())?.id;
     if (!authUserId) {
       throw new Error("You must be signed in to create agents.");
+    }
+
+    if (userPlan === "free") {
+      throw new Error("Free plan users can only use the 3 selected default agents.");
+    }
+
+    if (userPlan === "pro" && agents.filter((agent) => !agent.isDefault).length >= 15) {
+      throw new Error("Pro plan supports up to 15 total agents including custom agents.");
     }
 
     const { data, error } = await supabase
@@ -218,5 +181,37 @@ export function useAgents() {
     return updated;
   };
 
-  return { agents, loading, createAgent, updateAgent };
+  const selectDefaultAgents = async (agentIds: string[]) => {
+    const authUserId = userId || (await getUser())?.id;
+    if (!authUserId) {
+      throw new Error("You must be signed in to select default agents.");
+    }
+
+    if (userPlan !== "free") {
+      return;
+    }
+
+    if (agentIds.length !== 3) {
+      throw new Error("Select exactly 3 agents for the free plan.");
+    }
+
+    const selected = availableDefaultAgents.filter((agent) => agentIds.includes(agent.id));
+    const payload = selected.map((agent) => toDbPayload(agent, authUserId));
+    const { data, error } = await supabase.from("agents").insert(payload).select();
+    if (error) throw error;
+
+    setNeedsAgentSelection(false);
+    setAgents((data ?? []).map(mapDbAgent));
+  };
+
+  return {
+    agents,
+    loading,
+    userPlan,
+    needsAgentSelection,
+    availableDefaultAgents,
+    createAgent,
+    updateAgent,
+    selectDefaultAgents,
+  };
 }

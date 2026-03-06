@@ -10,7 +10,12 @@ export interface Agent {
   role: AgentRole;
   description: string;
   systemPrompt: string;
-  model: "claude-haiku-4-5" | "claude-sonnet-4-6" | "groq-llama-70b";
+  model:
+    | "meta-llama/llama-3.3-70b-instruct:free"
+    | "qwen/qwen3-coder:free"
+    | "mistralai/mistral-small-3.1-24b-instruct:free"
+    | "anthropic/claude-haiku-4-5"
+    | "anthropic/claude-sonnet-4-6";
   tools: string[];
   status: AgentStatus;
   lastOutput: string;

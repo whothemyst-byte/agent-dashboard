@@ -18,8 +18,8 @@ export const MODELS = {
   pro: {
     general: "anthropic/claude-haiku-4-5",
     coding: "anthropic/claude-haiku-4-5",
-    analysis: "anthropic/claude-sonnet-4-6",
-    ceo: "anthropic/claude-sonnet-4-6",
+    analysis: "anthropic/claude-haiku-4-5",
+    ceo: "anthropic/claude-haiku-4-5",
   },
   agency: {
     general: "anthropic/claude-haiku-4-5",
@@ -42,7 +42,7 @@ type Role =
   | "custom";
 
 export function getModel(plan: string, role: Role) {
-  const tier: Plan = plan === "agency" ? "agency" : plan === "pro" ? "pro" : "free";
+  const tier: Plan = plan === "agency" || plan === "enterprise" ? "agency" : plan === "pro" ? "pro" : "free";
   const config = MODELS[tier];
 
   if (role === "ceo") {

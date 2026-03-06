@@ -1,6 +1,7 @@
 "use client";
 
 import type { AgentOutput } from "@/lib/types";
+import type { UserPlan } from "@/lib/user-plan";
 
 const iconByRole: Record<string, string> = {
   ceo: "CEO",
@@ -16,6 +17,7 @@ const iconByRole: Record<string, string> = {
 type TaskInputProps = {
   task: string;
   model: string;
+  userPlan: UserPlan;
   isRunning: boolean;
   outputs: AgentOutput[];
   activeAgent: string;
@@ -28,6 +30,7 @@ type TaskInputProps = {
 export function TaskInput({
   task,
   model,
+  userPlan,
   isRunning,
   outputs,
   activeAgent,
@@ -36,6 +39,20 @@ export function TaskInput({
   onModelChange,
   onLaunch,
 }: TaskInputProps) {
+  const modelOptions =
+    userPlan === "agency" || userPlan === "enterprise"
+      ? [
+          { value: "anthropic/claude-sonnet-4-6", label: "Claude Sonnet 4.6" },
+          { value: "anthropic/claude-haiku-4-5", label: "Claude Haiku 4.5" },
+        ]
+      : userPlan === "pro"
+        ? [{ value: "anthropic/claude-haiku-4-5", label: "Claude Haiku 4.5" }]
+        : [
+            { value: "meta-llama/llama-3.3-70b-instruct:free", label: "Llama 3.3 70B" },
+            { value: "qwen/qwen3-coder:free", label: "Qwen3 Coder" },
+            { value: "mistralai/mistral-small-3.1-24b-instruct:free", label: "Mistral Small" },
+          ];
+
   return (
     <section className="rounded-2xl border border-zinc-800 bg-[#1a1a2e] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
       <div className="flex items-center justify-between gap-3">
@@ -63,8 +80,11 @@ export function TaskInput({
           onChange={(event) => onModelChange(event.target.value)}
           className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
         >
-          <option value="openrouter-auto">OpenRouter Auto Routing</option>
-          <option value="plan-default">Use Plan Defaults</option>
+          {modelOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
         </select>
 
         <button
@@ -83,7 +103,7 @@ export function TaskInput({
           <span className="text-xs text-zinc-500">{outputs.length} updates</span>
         </div>
         <p className="mt-2 text-xs text-zinc-500">
-          Models are selected automatically via OpenRouter based on your plan and the active agent role.
+          Your plan controls which models are available. Agents route through OpenRouter with plan-aware defaults.
         </p>
 
         {error ? <p className="mt-3 text-sm text-red-400">{error}</p> : null}

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getUser, signOut } from "@/lib/auth";
 import type { User } from "@/lib/types";
+import { getUserPlan } from "@/lib/user-plan";
 
 function ProfileContent() {
   const router = useRouter();
@@ -18,11 +19,12 @@ function ProfileContent() {
     async function loadUser() {
       const authUser = await getUser();
       if (!authUser) return;
+      const plan = await getUserPlan(authUser.id);
 
       setUser({
         id: authUser.id,
         email: authUser.email ?? "",
-        plan: "free",
+        plan,
         tasksUsedThisMonth: 0,
         agentsCreated: 0,
       });
