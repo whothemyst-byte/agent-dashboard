@@ -63,8 +63,8 @@ export function TaskInput({
           onChange={(event) => onModelChange(event.target.value)}
           className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
         >
-          <option value="haiku">Use Haiku (fast/cheap)</option>
-          <option value="sonnet">Use Sonnet (smart)</option>
+          <option value="openrouter-auto">OpenRouter Auto Routing</option>
+          <option value="plan-default">Use Plan Defaults</option>
         </select>
 
         <button
@@ -82,6 +82,9 @@ export function TaskInput({
           <h3 className="text-sm font-semibold text-zinc-100">Agent Activity Feed</h3>
           <span className="text-xs text-zinc-500">{outputs.length} updates</span>
         </div>
+        <p className="mt-2 text-xs text-zinc-500">
+          Models are selected automatically via OpenRouter based on your plan and the active agent role.
+        </p>
 
         {error ? <p className="mt-3 text-sm text-red-400">{error}</p> : null}
 

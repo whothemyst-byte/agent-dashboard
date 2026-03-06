@@ -21,18 +21,18 @@ const plans: Plan[] = [
   {
     id: "FREE",
     title: "FREE",
-    price: "₹0/month",
+    price: "Rs 0/month",
     features: [
       "5 tasks/month",
       "3 agents max (default only)",
-      "Free AI models (Llama 3.3 70B · Qwen3 Coder · Mistral Small)",
+      "Free AI models (Llama 3.3 70B - Qwen3 Coder - Mistral Small)",
       "No custom agents",
     ],
   },
   {
     id: "PRO",
     title: "PRO",
-    price: "₹2,900/month",
+    price: "Rs 2,900/month",
     highlighted: true,
     features: [
       "100 tasks/month",
@@ -45,7 +45,7 @@ const plans: Plan[] = [
   {
     id: "AGENCY",
     title: "AGENCY",
-    price: "₹9,900/month",
+    price: "Rs 9,900/month",
     features: [
       "Unlimited tasks",
       "Unlimited custom agents",

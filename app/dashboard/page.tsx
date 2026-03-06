@@ -28,7 +28,7 @@ function DashboardContent() {
   const { isRunning, outputs, activeAgent, error, runTask } = useTaskStream();
   const [user, setUser] = useState<User | null>(null);
   const [task, setTask] = useState("");
-  const [model, setModel] = useState("haiku");
+  const [model, setModel] = useState("openrouter-auto");
 
   useEffect(() => {
     async function loadUser() {

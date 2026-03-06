@@ -43,18 +43,19 @@ type Role =
 
 export function getModel(plan: string, role: Role) {
   const tier: Plan = plan === "agency" ? "agency" : plan === "pro" ? "pro" : "free";
+  const config = MODELS[tier];
 
   if (role === "ceo") {
-    return MODELS[tier].ceo ?? MODELS[tier].general;
+    return "ceo" in config ? config.ceo : config.general;
   }
 
   if (role === "coder" || role === "tech_lead" || role === "qa") {
-    return MODELS[tier].coding;
+    return config.coding;
   }
 
   if (role === "analyst") {
-    return MODELS[tier].analysis;
+    return config.analysis;
   }
 
-  return MODELS[tier].general;
+  return config.general;
 }
