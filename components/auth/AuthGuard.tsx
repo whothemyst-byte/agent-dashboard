@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getUser } from "@/lib/auth";
+import { getOnboardingStatus } from "@/lib/onboarding";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -20,6 +21,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         if (!user) {
           router.replace(`/auth?next=${encodeURIComponent(pathname)}`);
           return;
+        }
+
+        if (pathname !== "/onboarding") {
+          const onboarding = await getOnboardingStatus();
+          if (onboarding?.needsOnboarding) {
+            router.replace("/onboarding");
+            return;
+          }
         }
 
         setStatus("allowed");

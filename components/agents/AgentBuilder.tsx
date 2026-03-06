@@ -106,7 +106,7 @@ export function AgentBuilder({ userPlan, selectedAgent, onCreate, onUpdate, onCa
             {selectedAgent?.id.startsWith("default-")
               ? "Default agents can be reviewed here. Save will create your custom copy."
               : userPlan === "free"
-                ? "Free users keep the 3 selected default agents. Custom agent creation is disabled."
+                ? "Free users always get CEO, Manager, and Tech Lead. Custom agent creation is disabled."
                 : "Set the role, prompt, model, and visual identity for this agent."}
           </p>
         </div>

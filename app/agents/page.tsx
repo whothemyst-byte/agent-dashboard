@@ -95,7 +95,7 @@ export default function AgentsPage() {
                 <p className="mt-3 font-semibold text-zinc-300">No agents yet</p>
                 <p className="mt-1 text-sm text-zinc-500">
                   {userPlan === "free"
-                    ? "Return to dashboard and select your 3 free agents."
+                    ? "Complete onboarding to activate your default backbone agents."
                     : "Use the builder above to create your first agent."}
                 </p>
               </div>

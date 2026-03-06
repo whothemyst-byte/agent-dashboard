@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/auth?error=missing_config", request.url));
   }
 
-  const successUrl = new URL("/dashboard?verified=1", request.url);
+  const successUrl = new URL("/onboarding?verified=1", request.url);
   const failureUrl = new URL("/auth?error=verification_failed", request.url);
   const response = NextResponse.redirect(successUrl);
 

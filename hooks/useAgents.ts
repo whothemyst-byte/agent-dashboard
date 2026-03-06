@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Agent, AgentRole } from "@/lib/types";
+import type { Agent } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { getUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { getModel } from "@/lib/model-routing";
 import { getAgentModelOptions, getDefaultRoleSet, getUserPlan, type UserPlan } from "@/lib/user-plan";
+import { getBackboneRoles } from "@/lib/default-agents";
 
 function buildDefaultAgents(plan: UserPlan): Agent[] {
   return getDefaultRoleSet().map((item) => ({
@@ -71,17 +72,13 @@ export function useAgents() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string>("");
   const [userPlan, setUserPlan] = useState<UserPlan>("free");
-  const [needsAgentSelection, setNeedsAgentSelection] = useState(false);
-  const [availableDefaultAgents, setAvailableDefaultAgents] = useState<Agent[]>([]);
 
   useEffect(() => {
     async function loadAgents() {
       try {
         const authUser = await getUser();
         if (!authUser) {
-          const fallbackAgents = buildDefaultAgents("free");
-          setAvailableDefaultAgents(fallbackAgents);
-          setAgents(fallbackAgents);
+          setAgents(buildDefaultAgents("free"));
           return;
         }
 
@@ -89,7 +86,6 @@ export function useAgents() {
         const plan = await getUserPlan(authUser.id);
         setUserPlan(plan);
         const planDefaults = buildDefaultAgents(plan);
-        setAvailableDefaultAgents(planDefaults);
         const { data, error } = await supabase
           .from("agents")
           .select("*")
@@ -98,23 +94,23 @@ export function useAgents() {
 
         if (error) throw error;
 
-        const dbAgents = (data ?? []).map(mapDbAgent);
+        let dbAgents = (data ?? []).map(mapDbAgent);
+        const backboneRoles = new Set(getBackboneRoles());
+        const missingBackbone = planDefaults.filter(
+          (item) => backboneRoles.has(item.role) && !dbAgents.some((agent) => agent.role === item.role && agent.isDefault)
+        );
 
-        if (plan === "free") {
-          if (dbAgents.length === 0) {
-            setNeedsAgentSelection(true);
-            setAgents([]);
-          } else {
-            setNeedsAgentSelection(false);
-            setAgents(dbAgents);
+        if (missingBackbone.length > 0) {
+          const payload = missingBackbone.map((agent) => toDbPayload(agent, authUser.id));
+          const { data: inserted, error: insertError } = await supabase.from("agents").insert(payload).select();
+          if (!insertError && inserted) {
+            dbAgents = [...inserted.map(mapDbAgent), ...dbAgents];
           }
-          return;
         }
 
         const mergedDefaults = planDefaults.filter(
           (defaultAgent) => !dbAgents.some((item) => item.role === defaultAgent.role && item.isDefault),
         );
-        setNeedsAgentSelection(false);
         setAgents([...mergedDefaults, ...dbAgents]);
       } finally {
         setLoading(false);
@@ -181,37 +177,11 @@ export function useAgents() {
     return updated;
   };
 
-  const selectDefaultAgents = async (agentIds: string[]) => {
-    const authUserId = userId || (await getUser())?.id;
-    if (!authUserId) {
-      throw new Error("You must be signed in to select default agents.");
-    }
-
-    if (userPlan !== "free") {
-      return;
-    }
-
-    if (agentIds.length !== 3) {
-      throw new Error("Select exactly 3 agents for the free plan.");
-    }
-
-    const selected = availableDefaultAgents.filter((agent) => agentIds.includes(agent.id));
-    const payload = selected.map((agent) => toDbPayload(agent, authUserId));
-    const { data, error } = await supabase.from("agents").insert(payload).select();
-    if (error) throw error;
-
-    setNeedsAgentSelection(false);
-    setAgents((data ?? []).map(mapDbAgent));
-  };
-
   return {
     agents,
     loading,
     userPlan,
-    needsAgentSelection,
-    availableDefaultAgents,
     createAgent,
     updateAgent,
-    selectDefaultAgents,
   };
 }

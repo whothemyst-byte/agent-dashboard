@@ -24,12 +24,11 @@ import { getUserPlan } from "@/lib/user-plan";
 function DashboardContent() {
   const router = useRouter();
   const composerRef = useRef<HTMLDivElement | null>(null);
-  const { agents, loading, userPlan, needsAgentSelection, availableDefaultAgents, selectDefaultAgents } = useAgents();
+  const { agents, loading, userPlan } = useAgents();
   const { isRunning, outputs, activeAgent, error, runTask } = useTaskStream();
   const [user, setUser] = useState<User | null>(null);
   const [task, setTask] = useState("");
   const [model, setModel] = useState("meta-llama/llama-3.3-70b-instruct:free");
-  const [selectedDefaultAgents, setSelectedDefaultAgents] = useState<string[]>([]);
 
   useEffect(() => {
     async function loadUser() {
@@ -53,18 +52,6 @@ function DashboardContent() {
   async function launchTask() {
     if (!task.trim()) return;
     await runTask(task, user?.id ?? "demo-user", user?.plan ?? "free");
-  }
-
-  async function handleCompleteSelection() {
-    await selectDefaultAgents(selectedDefaultAgents);
-  }
-
-  function toggleDefaultAgent(agentId: string) {
-    setSelectedDefaultAgents((current) => {
-      if (current.includes(agentId)) return current.filter((item) => item !== agentId);
-      if (current.length >= 3) return current;
-      return [...current, agentId];
-    });
   }
 
   function scrollToComposer() {
@@ -202,45 +189,6 @@ function DashboardContent() {
                 </Link>
               </div>
 
-              {/* Agent selection for free plan */}
-              {needsAgentSelection ? (
-                <div className="mb-4 glass-card rounded-2xl p-5">
-                  <h3 className="text-base font-bold text-zinc-100">Choose Your 3 Free Agents</h3>
-                  <p className="mt-1 text-sm text-zinc-400">
-                    Free users can activate exactly 3 default agents on first login.
-                  </p>
-                  <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {availableDefaultAgents.map((agent) => {
-                      const selected = selectedDefaultAgents.includes(agent.id);
-                      return (
-                        <button
-                          key={agent.id}
-                          type="button"
-                          onClick={() => toggleDefaultAgent(agent.id)}
-                          className={`rounded-xl border p-4 text-left transition ${selected
-                              ? "border-[#e8560a] bg-[#e8560a]/10 shadow-[0_0_12px_rgba(232,86,10,0.2)]"
-                              : "border-zinc-800/60 bg-zinc-950/30 hover:border-zinc-600"
-                            }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-semibold text-zinc-100">{agent.name}</span>
-                            <span className="text-xs uppercase text-zinc-400">{agent.role}</span>
-                          </div>
-                          <p className="mt-2 text-xs text-zinc-400">{agent.description}</p>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleCompleteSelection}
-                    disabled={selectedDefaultAgents.length !== 3}
-                    className="mt-4 rounded-lg bg-gradient-to-r from-[#e8560a] to-[#ff6a1f] px-4 py-2 text-sm font-bold text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Save 3 Agents →
-                  </button>
-                </div>
-              ) : null}
 
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {loading ? (
@@ -352,3 +300,4 @@ export default function DashboardPage() {
     </AuthGuard>
   );
 }
+

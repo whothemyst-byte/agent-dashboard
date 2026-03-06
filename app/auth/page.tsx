@@ -14,12 +14,12 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
-  const [nextPath, setNextPath] = useState("/dashboard");
+  const [nextPath, setNextPath] = useState("/onboarding");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      setNextPath(params.get("next") || "/dashboard");
+      setNextPath(params.get("next") || "/onboarding");
       const authError = params.get("error");
       if (authError === "verification_failed") {
         setError("That email confirmation link is invalid or has expired. Request a new sign up link.");
@@ -64,7 +64,7 @@ export default function AuthPage() {
 
   const continueWithGoogle = async () => {
     setError("");
-    const redirectTo = `${getSiteUrl()}/dashboard`;
+    const redirectTo = `${getSiteUrl()}/onboarding`;
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo },
