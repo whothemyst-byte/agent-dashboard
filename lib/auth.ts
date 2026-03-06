@@ -6,7 +6,7 @@ export const signUp = async (email: string, password: string) => {
     email,
     password,
     options: {
-      emailRedirectTo: `${getSiteUrl()}/onboarding`,
+      emailRedirectTo: `${getSiteUrl()}/auth/confirm`,
     },
   });
   if (error) throw error;
@@ -47,7 +47,7 @@ export const resendVerificationEmail = async (email: string) => {
     type: "signup",
     email,
     options: {
-      emailRedirectTo: `${getSiteUrl()}/onboarding`,
+      emailRedirectTo: `${getSiteUrl()}/auth/confirm`,
     },
   });
   if (error) throw error;
