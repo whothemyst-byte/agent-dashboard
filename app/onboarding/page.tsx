@@ -6,6 +6,7 @@ import { getUser } from "@/lib/auth";
 import { getUserPlan } from "@/lib/user-plan";
 import { getDefaultRoleSet, getBackboneRoles } from "@/lib/default-agents";
 import { getOnboardingStatus } from "@/lib/onboarding";
+import { supabase } from "@/lib/supabase";
 
 type Step = "details" | "agents";
 
@@ -26,6 +27,16 @@ export default function OnboardingPage() {
   const backboneRoles = useMemo(() => new Set(getBackboneRoles()), []);
   const backboneAgents = allDefaults.filter((item) => backboneRoles.has(item.role));
   const optionalAgents = allDefaults.filter((item) => !backboneRoles.has(item.role));
+
+  async function getAuthHeaders() {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    return {
+      "Content-Type": "application/json",
+      ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+    };
+  }
 
   useEffect(() => {
     async function bootstrap() {
@@ -63,7 +74,7 @@ export default function OnboardingPage() {
     try {
       const response = await fetch("/api/onboarding/details", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await getAuthHeaders(),
         credentials: "include",
         body: JSON.stringify({ name, organization, purpose }),
       });
@@ -91,7 +102,7 @@ export default function OnboardingPage() {
     try {
       const response = await fetch("/api/onboarding/agents", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await getAuthHeaders(),
         credentials: "include",
         body: JSON.stringify({ selectedAgentIds: selectedIds }),
       });

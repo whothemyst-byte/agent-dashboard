@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUser, getUserScopedSupabaseClient } from "@/lib/server-security";
 
 export async function POST(req: Request) {
-  const user = await getAuthenticatedUser();
+  const user = await getAuthenticatedUser(req);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

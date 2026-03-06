@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUser, getUserScopedSupabaseClient } from "@/lib/server-security";
 import { getBackboneRoles, getDefaultRoleSet } from "@/lib/default-agents";
 
-export async function GET() {
-  const user = await getAuthenticatedUser();
+export async function GET(req: Request) {
+  const user = await getAuthenticatedUser(req);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

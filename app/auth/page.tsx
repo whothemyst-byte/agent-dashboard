@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { signIn, signUp } from "@/lib/auth";
+import { resendVerificationEmail, signIn, signUp } from "@/lib/auth";
 import { getSiteUrl } from "@/lib/site-url";
 import { supabase } from "@/lib/supabase";
 
@@ -14,7 +14,15 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [resendLoading, setResendLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [nextPath, setNextPath] = useState("/onboarding");
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = window.setTimeout(() => setResendCooldown((prev) => Math.max(prev - 1, 0)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [resendCooldown]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -56,9 +64,39 @@ export default function AuthPage() {
         router.push(nextPath);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Authentication failed.");
+      const message = e instanceof Error ? e.message : "Authentication failed.";
+      if (message.toLowerCase().includes("email not confirmed")) {
+        setNotice("Your email is not verified yet. Use resend verification email below.");
+      }
+      if (message.toLowerCase().includes("rate limit")) {
+        setError("Too many attempts. Please wait a minute before requesting another verification email.");
+        setResendCooldown(60);
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!email || resendCooldown > 0) return;
+    setResendLoading(true);
+    setError("");
+    try {
+      await resendVerificationEmail(email);
+      setNotice(`Verification email re-sent to ${email}.`);
+      setResendCooldown(60);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Unable to resend verification email.";
+      if (message.toLowerCase().includes("rate limit")) {
+        setError("Verification email rate limit reached. Please wait before trying again.");
+        setResendCooldown(60);
+      } else {
+        setError(message);
+      }
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -189,6 +227,24 @@ export default function AuthPage() {
               )}
             </button>
           </form>
+
+          <div className="mt-4 rounded-xl border border-zinc-800/70 bg-zinc-900/40 p-3">
+            <p className="text-xs text-zinc-500">
+              Didn&apos;t get the verification email?
+            </p>
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={!email || resendLoading || resendCooldown > 0}
+              className="mt-2 text-xs font-semibold text-[#e8560a] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {resendLoading
+                ? "Sending..."
+                : resendCooldown > 0
+                  ? `Resend available in ${resendCooldown}s`
+                  : "Resend verification email"}
+            </button>
+          </div>
 
           <div className="my-5 flex items-center gap-3">
             <div className="h-px flex-1 bg-zinc-800" />

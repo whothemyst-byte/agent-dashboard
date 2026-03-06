@@ -4,7 +4,7 @@ import { getBackboneDefaults, getBackboneRoles, getDefaultRoleSet } from "@/lib/
 import { getModel } from "@/lib/model-routing";
 
 export async function POST(req: Request) {
-  const user = await getAuthenticatedUser();
+  const user = await getAuthenticatedUser(req);
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -26,7 +26,29 @@ export async function getUserScopedSupabaseClient() {
   });
 }
 
-export async function getAuthenticatedUser() {
+export async function getAuthenticatedUser(request?: Request) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (request && url && anonKey) {
+    const authHeader = request.headers.get("authorization") ?? "";
+    const token = authHeader.toLowerCase().startsWith("bearer ")
+      ? authHeader.slice(7).trim()
+      : "";
+    if (token) {
+      const tokenClient = createClient(url, anonKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      });
+      const {
+        data: { user },
+      } = await tokenClient.auth.getUser(token);
+      if (user) return user;
+    }
+  }
+
   const supabase = await getUserScopedSupabaseClient();
   if (!supabase) return null;
 
