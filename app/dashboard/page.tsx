@@ -7,10 +7,19 @@ import { AuthGuard } from "@/components/auth/AuthGuard";
 import AgentCard from "@/components/agents/AgentCard";
 import { TaskInput } from "@/components/dashboard/TaskInput";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { getUser, signOut } from "@/lib/auth";
 import type { Agent, User } from "@/lib/types";
 import { useAgents } from "@/hooks/useAgents";
 import { useTaskStream } from "@/hooks/useTaskStream";
+import { LogOut, UserCircle2 } from "lucide-react";
 
 function DashboardContent() {
   const router = useRouter();
@@ -99,14 +108,40 @@ function DashboardContent() {
             >
               Pricing
             </Link>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              className="grid h-10 w-10 place-items-center rounded-full bg-zinc-800 text-sm font-bold"
-              title={user?.email || "Sign out"}
-            >
-              {(user?.email?.[0] ?? "U").toUpperCase()}
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="grid h-10 w-10 place-items-center rounded-full bg-zinc-800 text-sm font-bold ring-offset-[#0f0f1a] transition hover:bg-zinc-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e8560a] focus-visible:ring-offset-2"
+                  title={user?.email || "Account"}
+                >
+                  {(user?.email?.[0] ?? "U").toUpperCase()}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 border-zinc-800 bg-[#141426] text-zinc-100">
+                <DropdownMenuLabel className="space-y-1">
+                  <p className="text-sm font-semibold">{user?.email || "Signed in user"}</p>
+                  <p className="text-xs font-normal uppercase tracking-wide text-zinc-500">
+                    {(user?.plan ?? "free").toUpperCase()} plan
+                  </p>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-zinc-800" />
+                <DropdownMenuItem
+                  className="cursor-pointer text-zinc-100 focus:bg-zinc-800 focus:text-white"
+                  onClick={() => router.push("/profile")}
+                >
+                  <UserCircle2 className="mr-2 h-4 w-4" />
+                  Profile
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer text-red-300 focus:bg-zinc-800 focus:text-red-200"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Log out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </nav>
 
