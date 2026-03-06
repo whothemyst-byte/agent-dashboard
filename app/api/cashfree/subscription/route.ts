@@ -10,13 +10,14 @@ export async function POST(req: Request) {
 
   const appId = process.env.CASHFREE_APP_ID;
   const secretKey = process.env.CASHFREE_SECRET_KEY;
-  const siteUrl = process.env.NEXT_PUBLIC_URL;
+  const rawSiteUrl = process.env.NEXT_PUBLIC_URL;
   const proPlanId = process.env.CASHFREE_PRO_PLAN_ID;
   const agencyPlanId = process.env.CASHFREE_AGENCY_PLAN_ID;
 
-  if (!appId || !secretKey || !siteUrl || !proPlanId || !agencyPlanId) {
+  if (!appId || !secretKey || !rawSiteUrl || !proPlanId || !agencyPlanId) {
     return NextResponse.json({ success: false, error: 'Missing billing configuration' }, { status: 500 });
   }
+  const siteUrl = new URL(rawSiteUrl).origin;
 
   const { planId, email, phone, name } = await req.json();
   const safePlanId = planId === 'AGENCY' ? 'AGENCY' : planId === 'PRO' ? 'PRO' : null;
