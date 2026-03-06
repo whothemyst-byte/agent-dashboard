@@ -28,11 +28,11 @@ export async function middleware(req: NextRequest) {
       },
     });
     const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      data: { user },
+    } = await supabase.auth.getUser();
 
     if (
-      !session &&
+      !user &&
       (req.nextUrl.pathname.startsWith('/dashboard') ||
         req.nextUrl.pathname.startsWith('/agents'))
     ) {

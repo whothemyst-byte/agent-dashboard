@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { signIn, signUp } from "@/lib/auth";
+import { getSiteUrl } from "@/lib/site-url";
 import { supabase } from "@/lib/supabase";
 
 export default function AuthPage() {
@@ -16,12 +17,26 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [nextPath, setNextPath] = useState("/dashboard");
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       setNextPath(params.get("next") || "/dashboard");
+      const authError = params.get("error");
+      if (authError === "verification_failed") {
+        setError("That email confirmation link is invalid or has expired. Request a new sign up link.");
+      }
+      if (authError === "missing_config") {
+        setError("Supabase auth is not configured correctly for this deployment.");
+      }
+
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+      const hashError = hashParams.get("error_description");
+      if (hashError) {
+        setError(hashError.replace(/\+/g, " "));
+      }
     }
 
     supabase.auth.getSession().then(({ data }) => {
@@ -33,13 +48,23 @@ export default function AuthPage() {
     event.preventDefault();
     setLoading(true);
     setError("");
+    setNotice("");
     try {
       if (mode === "signin") {
         await signIn(email, password);
+        router.push(nextPath);
       } else {
-        await signUp(email, password);
+        const data = await signUp(email, password);
+        if (!data.session) {
+          setNotice(
+            `Verification email sent to ${email}. Check your inbox, confirm the link, then sign in.`,
+          );
+          setMode("signin");
+          setPassword("");
+          return;
+        }
+        router.push(nextPath);
       }
-      router.push(nextPath);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Authentication failed.");
     } finally {
@@ -49,10 +74,7 @@ export default function AuthPage() {
 
   const continueWithGoogle = async () => {
     setError("");
-    const redirectTo =
-      typeof window === "undefined"
-        ? undefined
-        : `${window.location.origin}/dashboard`;
+    const redirectTo = `${getSiteUrl()}/dashboard`;
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo },
@@ -100,6 +122,7 @@ export default function AuthPage() {
                 required
                 className="border-zinc-700 bg-zinc-900/50 text-zinc-100 placeholder:text-zinc-500"
               />
+              {notice ? <p className="text-sm text-emerald-400">{notice}</p> : null}
               {error ? <p className="text-sm text-red-400">{error}</p> : null}
               <Button
                 type="submit"
