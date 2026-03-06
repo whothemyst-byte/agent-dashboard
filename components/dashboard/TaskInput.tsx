@@ -1,111 +1,116 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useTaskStream } from "@/hooks/useTaskStream";
+import type { AgentOutput } from "@/lib/types";
 
 const iconByRole: Record<string, string> = {
-  ceo: "👑",
-  manager: "📌",
-  tech_lead: "⚙️",
-  researcher: "🔎",
-  analyst: "📊",
-  coder: "💻",
-  writer: "✍️",
-  qa: "🧪",
+  ceo: "CEO",
+  manager: "PM",
+  tech_lead: "TL",
+  researcher: "RS",
+  analyst: "AN",
+  coder: "CD",
+  writer: "WR",
+  qa: "QA",
 };
 
-export function TaskInput() {
-  const [task, setTask] = useState("");
-  const [model, setModel] = useState("haiku");
-  const [expanded, setExpanded] = useState<Record<number, boolean>>({});
-  const { isRunning, outputs, activeAgent, error, runTask } = useTaskStream();
+type TaskInputProps = {
+  task: string;
+  model: string;
+  isRunning: boolean;
+  outputs: AgentOutput[];
+  activeAgent: string;
+  error: string;
+  onTaskChange: (value: string) => void;
+  onModelChange: (value: string) => void;
+  onLaunch: () => Promise<void> | void;
+};
 
-  const userId = "demo-user";
-
-  const onLaunch = async () => {
-    if (!task.trim()) return;
-    await runTask(task, userId);
-  };
-
-  const activity = useMemo(() => [...outputs].reverse(), [outputs]);
-
+export function TaskInput({
+  task,
+  model,
+  isRunning,
+  outputs,
+  activeAgent,
+  error,
+  onTaskChange,
+  onModelChange,
+  onLaunch,
+}: TaskInputProps) {
   return (
-    <section className="rounded-xl border border-zinc-800 bg-[#1a1a2e] p-4">
-      <h2 className="text-lg font-semibold text-zinc-100">Launch Task</h2>
+    <section className="rounded-2xl border border-zinc-800 bg-[#1a1a2e] p-5 shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold text-zinc-100">Mission Control</h2>
+          <p className="mt-1 text-sm text-zinc-400">
+            Write a goal, launch the workflow, and watch each agent report back live.
+          </p>
+        </div>
+        <span className="rounded-full border border-zinc-700 bg-zinc-900 px-3 py-1 text-xs uppercase tracking-wide text-zinc-300">
+          {activeAgent ? `active: ${activeAgent}` : "standby"}
+        </span>
+      </div>
+
       <textarea
         value={task}
-        onChange={(e) => setTask(e.target.value)}
-        placeholder="Describe the goal you want the agents to execute..."
-        className="mt-3 min-h-32 w-full rounded-lg border border-zinc-700 bg-zinc-900/60 p-3 text-sm text-zinc-100 outline-none ring-0 placeholder:text-zinc-500 focus:border-zinc-500"
+        onChange={(event) => onTaskChange(event.target.value)}
+        placeholder="Describe the outcome you want. Example: research competitors, identify risks, propose architecture, and draft rollout plan."
+        className="mt-4 min-h-36 w-full rounded-xl border border-zinc-700 bg-zinc-950/70 p-4 text-sm text-zinc-100 outline-none placeholder:text-zinc-500 focus:border-[#e8560a]"
       />
 
-      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <select
           value={model}
-          onChange={(e) => setModel(e.target.value)}
-          className="rounded-md border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-100"
+          onChange={(event) => onModelChange(event.target.value)}
+          className="rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100"
         >
           <option value="haiku">Use Haiku (fast/cheap)</option>
           <option value="sonnet">Use Sonnet (smart)</option>
         </select>
+
         <button
           type="button"
           onClick={onLaunch}
-          disabled={isRunning}
-          className="rounded-md bg-[#e8560a] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#ff6a1f] disabled:cursor-not-allowed disabled:opacity-60"
+          disabled={isRunning || !task.trim()}
+          className="rounded-lg bg-[#e8560a] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#ff6a1f] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isRunning ? "Running..." : "Launch Task"}
+          {isRunning ? "Task Running..." : "Launch Task"}
         </button>
       </div>
 
-      <div className="mt-5 rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
+      <div className="mt-6 rounded-xl border border-zinc-800 bg-zinc-950/40 p-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-zinc-100">Agent Activity Feed</h3>
-          <span className="text-xs text-zinc-400">
-            {activeAgent ? `Active: ${activeAgent}` : "Idle"}
-          </span>
+          <span className="text-xs text-zinc-500">{outputs.length} updates</span>
         </div>
-        {error ? <p className="mt-2 text-sm text-red-400">{error}</p> : null}
-        <div className="mt-3 space-y-2">
-          {activity.length === 0 ? (
-            <p className="text-sm text-zinc-500">No output yet.</p>
+
+        {error ? <p className="mt-3 text-sm text-red-400">{error}</p> : null}
+
+        <div className="mt-3 space-y-3">
+          {outputs.length === 0 ? (
+            <p className="text-sm text-zinc-500">No output yet. Launch a task to start the stream.</p>
           ) : (
-            activity.map((output, idx) => {
-              const isExpanded = !!expanded[idx];
-              const icon = iconByRole[output.agentRole] ?? "🤖";
-              return (
+            outputs
+              .slice()
+              .reverse()
+              .map((output, index) => (
                 <article
-                  key={`${output.agentId}-${idx}-${output.timestamp}`}
-                  className="rounded-md border border-zinc-800 bg-[#141423] p-3"
+                  key={`${output.agentId}-${output.timestamp}-${index}`}
+                  className="rounded-lg border border-zinc-800 bg-[#141423] p-3"
                 >
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-medium text-zinc-100">
-                      <span className="mr-2">{icon}</span>
+                      <span className="mr-2 inline-grid h-6 w-6 place-items-center rounded-full bg-zinc-800 text-[11px] text-zinc-200">
+                        {iconByRole[output.agentRole] ?? "AG"}
+                      </span>
                       {output.agentName}
                     </p>
-                    <span className="text-xs text-zinc-400">
-                      Tokens: {output.tokensUsed}
-                    </span>
+                    <span className="text-xs text-zinc-500">{output.tokensUsed} tokens</span>
                   </div>
-                  <p
-                    className={`mt-2 text-sm text-zinc-300 ${
-                      isExpanded ? "" : "line-clamp-2"
-                    }`}
-                  >
+                  <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-zinc-300">
                     {output.content}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpanded((prev) => ({ ...prev, [idx]: !prev[idx] }))
-                    }
-                    className="mt-2 text-xs font-medium text-[#e8560a] hover:text-[#ff6a1f]"
-                  >
-                    {isExpanded ? "Collapse" : "Expand"}
-                  </button>
                 </article>
-              );
-            })
+              ))
           )}
         </div>
       </div>

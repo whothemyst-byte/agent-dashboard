@@ -4,10 +4,17 @@ import type { NextRequest } from 'next/server';
 
 export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  // Do not hard-fail the whole site if auth env vars are missing or middleware
+  // cannot initialize in production. The protected pages can still render.
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return res;
+  }
+
+  try {
+    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
       cookies: {
         get(name: string) {
           return req.cookies.get(name)?.value;
@@ -19,16 +26,22 @@ export async function middleware(req: NextRequest) {
           res.cookies.set({ name, value: '', ...options, maxAge: 0 });
         },
       },
+    });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (
+      !session &&
+      (req.nextUrl.pathname.startsWith('/dashboard') ||
+        req.nextUrl.pathname.startsWith('/agents'))
+    ) {
+      return NextResponse.redirect(new URL('/auth', req.url));
     }
-  );
-  const { data: { session } } = await supabase.auth.getSession();
-  if (
-    !session &&
-    (req.nextUrl.pathname.startsWith('/dashboard') ||
-      req.nextUrl.pathname.startsWith('/agents'))
-  ) {
-    return NextResponse.redirect(new URL('/auth', req.url));
+  } catch {
+    return res;
   }
+
   return res;
 }
 export const config = { matcher: ['/dashboard/:path*', '/agents/:path*'] };

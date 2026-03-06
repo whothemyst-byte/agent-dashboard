@@ -15,14 +15,27 @@ export function useTaskStream() {
     setOutputs([]);
     setError("");
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    if (!apiUrl) {
+      setError("NEXT_PUBLIC_API_URL is not configured.");
+      setIsRunning(false);
+      return;
+    }
+
     const response = await fetch(
-      process.env.NEXT_PUBLIC_API_URL + "/api/tasks/run",
+      apiUrl + "/api/tasks/run",
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ task, user_id: userId }),
       },
     );
+
+    if (!response.ok || !response.body) {
+      setError(`Task launch failed (${response.status}).`);
+      setIsRunning(false);
+      return;
+    }
 
     const reader = response.body!.getReader();
     const decoder = new TextDecoder();

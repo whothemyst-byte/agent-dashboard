@@ -16,12 +16,18 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [nextPath, setNextPath] = useState("/dashboard");
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      setNextPath(params.get("next") || "/dashboard");
+    }
+
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) router.push("/dashboard");
+      if (data.session) router.push(nextPath);
     });
-  }, [router]);
+  }, [nextPath, router]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -33,7 +39,7 @@ export default function AuthPage() {
       } else {
         await signUp(email, password);
       }
-      router.push("/dashboard");
+      router.push(nextPath);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Authentication failed.");
     } finally {
