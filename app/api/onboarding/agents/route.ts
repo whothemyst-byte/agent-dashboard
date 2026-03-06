@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser, getSupabaseAdminClient } from "@/lib/server-security";
+import { getAuthenticatedUser, getUserScopedSupabaseClient } from "@/lib/server-security";
 import { getBackboneDefaults, getBackboneRoles, getDefaultRoleSet } from "@/lib/default-agents";
 import { getModel } from "@/lib/model-routing";
 
@@ -9,15 +9,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabaseAdmin = getSupabaseAdminClient();
-  if (!supabaseAdmin) {
-    return NextResponse.json({ error: "Missing Supabase admin configuration" }, { status: 500 });
+  const supabase = await getUserScopedSupabaseClient();
+  if (!supabase) {
+    return NextResponse.json({ error: "Missing Supabase configuration" }, { status: 500 });
   }
 
   const body = (await req.json()) as { selectedAgentIds?: string[] };
   const selectedAgentIds = Array.isArray(body.selectedAgentIds) ? body.selectedAgentIds : [];
 
-  const { data: planRow } = await supabaseAdmin
+  const { data: planRow } = await supabase
     .from("user_plans")
     .select("plan")
     .eq("user_id", user.id)
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
     ...effectiveOptionalSelection.map((item) => item.role),
   ]);
 
-  const { data: existingAgents } = await supabaseAdmin
+  const { data: existingAgents } = await supabase
     .from("agents")
     .select("role")
     .eq("user_id", user.id)
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
       is_default: true,
     }));
 
-    const { error: insertError } = await supabaseAdmin.from("agents").insert(payload);
+    const { error: insertError } = await supabase.from("agents").insert(payload);
     if (insertError) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
     }

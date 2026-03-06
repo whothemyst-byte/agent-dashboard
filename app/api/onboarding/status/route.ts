@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser, getSupabaseAdminClient } from "@/lib/server-security";
+import { getAuthenticatedUser, getUserScopedSupabaseClient } from "@/lib/server-security";
 import { getBackboneRoles } from "@/lib/default-agents";
 
 export async function GET() {
@@ -8,13 +8,13 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabaseAdmin = getSupabaseAdminClient();
-  if (!supabaseAdmin) {
-    return NextResponse.json({ error: "Missing Supabase admin configuration" }, { status: 500 });
+  const supabase = await getUserScopedSupabaseClient();
+  if (!supabase) {
+    return NextResponse.json({ error: "Missing Supabase configuration" }, { status: 500 });
   }
 
   let detailsCompleted = false;
-  const { data: detailsRow, error: detailsError } = await supabaseAdmin
+  const { data: detailsRow, error: detailsError } = await supabase
     .from("user_onboarding_profiles")
     .select("name, organization, purpose")
     .eq("user_id", user.id)
@@ -25,7 +25,7 @@ export async function GET() {
   }
 
   const backboneRoles = getBackboneRoles();
-  const { data: backboneRows } = await supabaseAdmin
+  const { data: backboneRows } = await supabase
     .from("agents")
     .select("role")
     .eq("user_id", user.id)

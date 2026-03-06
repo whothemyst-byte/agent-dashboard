@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser, getSupabaseAdminClient } from "@/lib/server-security";
+import { getAuthenticatedUser, getUserScopedSupabaseClient } from "@/lib/server-security";
 
 export async function POST(req: Request) {
   const user = await getAuthenticatedUser();
@@ -7,9 +7,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabaseAdmin = getSupabaseAdminClient();
-  if (!supabaseAdmin) {
-    return NextResponse.json({ error: "Missing Supabase admin configuration" }, { status: 500 });
+  const supabase = await getUserScopedSupabaseClient();
+  if (!supabase) {
+    return NextResponse.json({ error: "Missing Supabase configuration" }, { status: 500 });
   }
 
   const body = (await req.json()) as {
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { error } = await supabaseAdmin.from("user_onboarding_profiles").upsert(
+  const { error } = await supabase.from("user_onboarding_profiles").upsert(
     {
       user_id: user.id,
       name,
