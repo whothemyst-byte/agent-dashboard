@@ -108,6 +108,15 @@ export function useAgents() {
           }
         }
 
+        if (plan === "free") {
+          const backbone = dbAgents.filter((agent) => agent.isDefault && backboneRoles.has(agent.role));
+          const oneOptional = dbAgents
+            .filter((agent) => agent.isDefault && !backboneRoles.has(agent.role))
+            .slice(0, 1);
+          setAgents([...backbone, ...oneOptional]);
+          return;
+        }
+
         const mergedDefaults = planDefaults.filter(
           (defaultAgent) => !dbAgents.some((item) => item.role === defaultAgent.role && item.isDefault),
         );
@@ -127,11 +136,11 @@ export function useAgents() {
     }
 
     if (userPlan === "free") {
-      throw new Error("Free plan users can only use the 3 selected default agents.");
+      throw new Error("Free plan allows only default agents. Upgrade to unlock custom agents.");
     }
 
     if (userPlan === "pro" && agents.filter((agent) => !agent.isDefault).length >= 15) {
-      throw new Error("Pro plan supports up to 15 total agents including custom agents.");
+      throw new Error("Pro plan supports up to 15 custom agents.");
     }
 
     const { data, error } = await supabase

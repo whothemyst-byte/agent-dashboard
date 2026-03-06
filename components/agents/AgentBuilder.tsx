@@ -47,6 +47,7 @@ export function AgentBuilder({ userPlan, selectedAgent, onCreate, onUpdate, onCa
   const [color, setColor] = useState("#6366f1");
   const [icon, setIcon] = useState("AG");
   const isEditing = useMemo(() => Boolean(selectedAgent && !selectedAgent.id.startsWith("default-")), [selectedAgent]);
+  const customCreationLocked = userPlan === "free";
   const models = useMemo(() => getAgentModelOptions(userPlan), [userPlan]);
 
   useEffect(() => {
@@ -104,9 +105,9 @@ export function AgentBuilder({ userPlan, selectedAgent, onCreate, onUpdate, onCa
           </h2>
           <p className="text-sm text-zinc-400">
             {selectedAgent?.id.startsWith("default-")
-              ? "Default agents can be reviewed here. Save will create your custom copy."
+              ? "Default agents can be reviewed here."
               : userPlan === "free"
-                ? "Free users always get CEO, Manager, and Tech Lead. Custom agent creation is disabled."
+                ? "Free plan: CEO, Manager, Tech Lead + 1 selected specialist. Upgrade to unlock custom agent creation."
                 : "Set the role, prompt, model, and visual identity for this agent."}
           </p>
         </div>
@@ -166,7 +167,7 @@ export function AgentBuilder({ userPlan, selectedAgent, onCreate, onUpdate, onCa
         onChange={(event) => setTools(event.target.value)}
       />
 
-      <Button type="submit" disabled={userPlan === "free" && !selectedAgent}>
+      <Button type="submit" disabled={customCreationLocked}>
         {isEditing ? "Save Agent" : selectedAgent?.id.startsWith("default-") ? "Create Custom Copy" : "Create Agent"}
       </Button>
     </form>

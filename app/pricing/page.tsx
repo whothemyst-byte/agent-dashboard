@@ -27,7 +27,7 @@ const plans: Plan[] = [
     description: "Get started with AI agents",
     features: [
       "5 tasks/month",
-      "3 agents max (default only)",
+      "CEO + Manager + Tech Lead + 1 selected specialist",
       "Llama 3.3 70B · Qwen3 Coder · Mistral Small",
       "No custom agents",
     ],
@@ -42,7 +42,8 @@ const plans: Plan[] = [
     badge: "Most Popular",
     features: [
       "100 tasks/month",
-      "15 agents (including custom)",
+      "All default agents unlocked",
+      "Up to 15 custom agents",
       "Claude Haiku 4.5 via OpenRouter",
       "Task history (30 days)",
       "Priority support",

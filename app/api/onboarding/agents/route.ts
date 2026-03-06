@@ -30,7 +30,15 @@ export async function POST(req: Request) {
   const optionalDefaults = allDefaults.filter((item) => !backboneRoles.has(item.role));
 
   const optionalSelection = optionalDefaults.filter((item) => selectedAgentIds.includes(item.id));
-  const effectiveOptionalSelection = plan === "free" ? [] : optionalSelection;
+  if (plan === "free" && optionalSelection.length !== 1) {
+    return NextResponse.json(
+      { error: "Free plan requires selecting exactly one additional default agent." },
+      { status: 400 }
+    );
+  }
+
+  const effectiveOptionalSelection =
+    plan === "free" ? optionalSelection : optionalDefaults;
 
   const expectedRoles = new Set([
     ...backbone.map((item) => item.role),
@@ -66,6 +74,22 @@ export async function POST(req: Request) {
     const { error: insertError } = await supabase.from("agents").insert(payload);
     if (insertError) {
       return NextResponse.json({ error: insertError.message }, { status: 500 });
+    }
+  }
+
+  if (plan === "free") {
+    const selectedOptionalRoles = new Set(effectiveOptionalSelection.map((item) => item.role));
+    const removableOptionalRoles = optionalDefaults
+      .filter((item) => !selectedOptionalRoles.has(item.role))
+      .map((item) => item.role);
+
+    if (removableOptionalRoles.length > 0) {
+      await supabase
+        .from("agents")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("is_default", true)
+        .in("role", removableOptionalRoles);
     }
   }
 

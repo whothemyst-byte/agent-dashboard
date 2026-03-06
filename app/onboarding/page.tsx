@@ -81,6 +81,11 @@ export default function OnboardingPage() {
   }
 
   async function handleCompleteAgents() {
+    if (plan === "free" && selectedIds.length !== 1) {
+      setError("Select exactly one additional agent for the Free plan.");
+      return;
+    }
+
     setError("");
     setSaving(true);
     try {
@@ -105,9 +110,9 @@ export default function OnboardingPage() {
   }
 
   function toggleAgent(agentId: string) {
-    if (plan === "free") return;
+    if (plan !== "free") return;
     setSelectedIds((current) =>
-      current.includes(agentId) ? current.filter((id) => id !== agentId) : [...current, agentId]
+      current.includes(agentId) ? current.filter((id) => id !== agentId) : [agentId]
     );
   }
 
@@ -261,28 +266,28 @@ export default function OnboardingPage() {
               <p className="text-xs uppercase tracking-wider text-zinc-500">Optional default agents</p>
               {plan === "free" ? (
                 <p className="mt-2 rounded-xl border border-zinc-700/60 bg-zinc-900/40 p-3 text-sm text-zinc-400">
-                  Free plan includes the 3 backbone agents by default. Upgrade to unlock additional default agents.
+                  Free plan includes CEO, Manager, and Tech Lead plus exactly one additional default agent.
                 </p>
               ) : (
                 <p className="mt-2 text-sm text-zinc-400">
-                  Pick any additional default agents for your initial workspace.
+                  Pro and Agency plans unlock all default agents automatically.
                 </p>
               )}
 
               <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
                 {optionalAgents.map((agent) => {
-                  const selected = selectedIds.includes(agent.id);
+                  const selected = plan === "free" ? selectedIds.includes(agent.id) : true;
                   return (
                     <button
                       key={agent.id}
                       type="button"
                       onClick={() => toggleAgent(agent.id)}
-                      disabled={plan === "free"}
+                      disabled={plan !== "free"}
                       className={`rounded-xl border p-4 text-left transition ${
                         selected
                           ? "border-[#e8560a] bg-[#e8560a]/10"
                           : "border-zinc-800/60 bg-zinc-950/30"
-                      } ${plan === "free" ? "cursor-not-allowed opacity-60" : "hover:border-zinc-600"}`}
+                      } ${plan !== "free" ? "cursor-not-allowed opacity-70" : "hover:border-zinc-600"}`}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-zinc-100">{agent.name}</span>
@@ -305,7 +310,7 @@ export default function OnboardingPage() {
               <button
                 type="button"
                 onClick={handleCompleteAgents}
-                disabled={saving}
+                disabled={saving || (plan === "free" && selectedIds.length !== 1)}
                 className="rounded-xl bg-gradient-to-r from-[#e8560a] to-[#ff6a1f] px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving ? "Saving..." : "Continue to dashboard"}
