@@ -124,3 +124,67 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ── AgentCard animations (replaces broken styled-jsx) ── */
+@keyframes typingBounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  40% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+@keyframes runningBorderPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 1px transparent;
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(232, 86, 10, 0.6), 0 0 16px rgba(232, 86, 10, 0.2);
+  }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes floatUp {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+.dot {
+  animation: typingBounce 0.9s infinite ease-in-out;
+}
+
+.running-glow {
+  animation: runningBorderPulse 1.5s infinite ease-in-out;
+}
+
+.glass-card {
+  background: rgba(26, 26, 46, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #e8560a 0%, #ff6a1f 50%, #ffaa44 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.glow-orange {
+  box-shadow: 0 0 20px rgba(232, 86, 10, 0.3), 0 0 60px rgba(232, 86, 10, 0.1);
+}
+
+.space-bg {
+  background: radial-gradient(ellipse at 20% 50%, rgba(99, 40, 110, 0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 20%, rgba(30, 64, 175, 0.06) 0%, transparent 50%),
+              #0a0a14;
+}
