@@ -6,7 +6,7 @@ export const signUp = async (email: string, password: string) => {
     email,
     password,
     options: {
-      emailRedirectTo: `${getSiteUrl()}/auth/confirm`,
+      emailRedirectTo: getSiteUrl(),
     },
   });
   if (error) throw error;
