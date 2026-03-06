@@ -5,7 +5,7 @@ import type { Agent, AgentRole } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { getUser } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
-import { getModel } from "@/lib/openrouter";
+import { getModel } from "@/lib/model-routing";
 import { getAgentModelOptions, getDefaultRoleSet, getUserPlan, type UserPlan } from "@/lib/user-plan";
 
 function buildDefaultAgents(plan: UserPlan): Agent[] {
