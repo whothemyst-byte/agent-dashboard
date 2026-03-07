@@ -25,14 +25,15 @@ export default function AuthPage() {
   }, [resendCooldown]);
 
   useEffect(() => {
+    let resolvedPath = "/dashboard";
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      setNextPath(params.get("next") || "/dashboard");
+      resolvedPath = params.get("next") || "/dashboard";
+      setNextPath(resolvedPath);
       const authError = params.get("error");
       if (authError === "verification_failed") {
         setError("That email confirmation link is invalid or has expired. Request a new sign up link.");
-      }
-      if (authError === "missing_config") {
+      } else if (authError === "missing_config") {
         setError("Supabase auth is not configured correctly for this deployment.");
       }
       const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ""));
@@ -40,9 +41,10 @@ export default function AuthPage() {
       if (hashError) setError(hashError.replace(/\+/g, " "));
     }
     getUser().then((user) => {
-      if (user) router.push(nextPath);
+      if (user) router.push(resolvedPath);
     });
-  }, [nextPath, router]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -67,8 +69,7 @@ export default function AuthPage() {
       const message = e instanceof Error ? e.message : "Authentication failed.";
       if (message.toLowerCase().includes("email not confirmed")) {
         setNotice("Your email is not verified yet. Use resend verification email below.");
-      }
-      if (message.toLowerCase().includes("rate limit")) {
+      } else if (message.toLowerCase().includes("rate limit")) {
         setError("Too many attempts. Please wait a minute before requesting another verification email.");
         setResendCooldown(60);
       } else {
@@ -174,6 +175,8 @@ export default function AuthPage() {
               <input
                 id="email"
                 type="email"
+                name="email"
+                autoComplete="email"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -188,6 +191,8 @@ export default function AuthPage() {
               <input
                 id="password"
                 type="password"
+                name="password"
+                autoComplete={mode === "signin" ? "current-password" : "new-password"}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

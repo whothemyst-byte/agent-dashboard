@@ -34,7 +34,8 @@ export async function middleware(req: NextRequest) {
     if (
       !user &&
       (req.nextUrl.pathname.startsWith('/dashboard') ||
-        req.nextUrl.pathname.startsWith('/agents'))
+        req.nextUrl.pathname.startsWith('/agents') ||
+        req.nextUrl.pathname.startsWith('/profile'))
     ) {
       return NextResponse.redirect(new URL('/auth', req.url));
     }
