@@ -57,6 +57,9 @@ export default function OnboardingPage() {
 
       if (status?.detailsCompleted) {
         setStep("agents");
+        if (!status.agentSelectionCompleted) {
+          setShowAgentPopup(true);
+        }
       } else {
         setStep("details");
       }

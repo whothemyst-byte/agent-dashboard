@@ -93,6 +93,18 @@ export async function POST(req: Request) {
     }
   }
 
+  const { error: markError } = await supabase
+    .from("user_onboarding_profiles")
+    .update({
+      agent_selection_completed: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", user.id);
+
+  if (markError) {
+    return NextResponse.json({ error: markError.message }, { status: 500 });
+  }
+
   return NextResponse.json({
     saved: true,
     guaranteedBackbone: backbone.map((item) => item.role),

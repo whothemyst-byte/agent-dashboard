@@ -35,6 +35,7 @@ export async function POST(req: Request) {
       name,
       organization,
       purpose,
+      details_completed: true,
       updated_at: new Date().toISOString(),
     },
     { onConflict: "user_id" }
