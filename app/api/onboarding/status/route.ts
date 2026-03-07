@@ -23,28 +23,45 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: detailsError.message }, { status: 500 });
   }
 
+  const backboneRoles = getBackboneRoles();
+
+  // Check backbone agent existence (used both as fallback for agentSelection
+  // and as a bypass for users who pre-date the onboarding profile system).
+  const { data: backboneAgents, error: backboneError } = await supabase
+    .from("agents")
+    .select("role")
+    .eq("user_id", user.id)
+    .eq("is_default", true)
+    .in("role", backboneRoles);
+
+  if (backboneError) {
+    return NextResponse.json({ error: backboneError.message }, { status: 500 });
+  }
+
+  const existingBackboneRoles = new Set(
+    (backboneAgents ?? []).map((row: { role: string }) => row.role)
+  );
+  const hasAllBackboneAgents = backboneRoles.every((role) =>
+    existingBackboneRoles.has(role)
+  );
+
+  // If the user has no onboarding profile row at all but already has backbone
+  // agents, they're an existing user — treat them as fully onboarded so they
+  // are never redirected to /onboarding.
+  if (!detailsRow && hasAllBackboneAgents) {
+    return NextResponse.json({
+      detailsCompleted: true,
+      agentSelectionCompleted: true,
+      needsOnboarding: false,
+    });
+  }
+
   const detailsCompleted = Boolean(
     detailsRow?.details_completed ||
     (detailsRow?.name && detailsRow?.organization && detailsRow?.purpose)
   );
-  let agentSelectionCompleted = Boolean(detailsRow?.agent_selection_completed);
-
-  if (!agentSelectionCompleted) {
-    const backboneRoles = getBackboneRoles();
-    const { data: backboneAgents, error: backboneError } = await supabase
-      .from("agents")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("is_default", true)
-      .in("role", backboneRoles);
-
-    if (backboneError) {
-      return NextResponse.json({ error: backboneError.message }, { status: 500 });
-    }
-
-    const existingBackboneRoles = new Set((backboneAgents ?? []).map((row: { role: string }) => row.role));
-    agentSelectionCompleted = backboneRoles.every((role) => existingBackboneRoles.has(role));
-  }
+  const agentSelectionCompleted =
+    Boolean(detailsRow?.agent_selection_completed) || hasAllBackboneAgents;
 
   return NextResponse.json({
     detailsCompleted,
